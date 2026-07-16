@@ -10,6 +10,10 @@
     <projectSourceUrl>https://github.com/justinbehncodes/switchboard</projectSourceUrl>
     <packageSourceUrl>https://github.com/justinbehncodes/switchboard/tree/master/packaging/chocolatey</packageSourceUrl>
     <licenseUrl>https://github.com/justinbehncodes/switchboard/blob/master/LICENSE</licenseUrl>
+    <bugTrackerUrl>https://github.com/justinbehncodes/switchboard/issues</bugTrackerUrl>
+    <docsUrl>https://github.com/justinbehncodes/switchboard#readme</docsUrl>
+    <releaseNotes>https://github.com/justinbehncodes/switchboard/releases</releaseNotes>
+    <iconUrl>https://cdn.jsdelivr.net/gh/justinbehncodes/switchboard@44a626acc0036c9660fa6cef58e5fa5405f43aa6/assets/icon.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <tags>browser default-browser link-router profiles portable edge chrome</tags>
     <summary>Route every clicked link to the right browser profile.</summary>
@@ -34,7 +38,7 @@ home profile.
     <dependencies>
       <!-- Settings UI + picker use the WebView2 runtime (preinstalled on
            Win10/11 with Edge). Link routing itself has no dependencies. -->
-      <dependency id="webview2-runtime" />
+      <dependency id="webview2-runtime" version="100.0.1185.50" />
     </dependencies>
   </metadata>
   <files>
