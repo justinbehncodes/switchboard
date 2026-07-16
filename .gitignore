@@ -3,3 +3,4 @@ dist/
 *.exe
 .env
 node_modules/
+*.nupkg
