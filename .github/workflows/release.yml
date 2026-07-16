@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write # artifact attestation
+  attestations: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - run: go vet ./...
+      - run: go test ./...
+
+      - name: Build
+        run: go build -trimpath -ldflags "-H windowsgui -s -w -X main.version=${{ github.ref_name }}" -o switchboard.exe .
+
+      - name: Checksums
+        shell: pwsh
+        run: |
+          $h = (Get-FileHash switchboard.exe -Algorithm SHA256).Hash.ToLower()
+          "$h  switchboard.exe" | Set-Content -Encoding ascii SHA256SUMS
+          Get-Content SHA256SUMS
+
+      # Cryptographic provenance: proves this exe was built by this workflow
+      # from this public source. Verify with: gh attestation verify switchboard.exe -R <owner>/<repo>
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        # Attestation requires a public repo; don't block releases while private.
+        continue-on-error: true
+        with:
+          subject-path: switchboard.exe
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            switchboard.exe
+            SHA256SUMS
+          generate_release_notes: true
+          draft: false

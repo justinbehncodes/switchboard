@@ -1,0 +1,24 @@
+{
+    "version": "0.0.0",
+    "description": "Route every clicked link to the right browser profile, based on source app and URL.",
+    "homepage": "https://github.com/justinbehncodes/switchboard",
+    "license": "MIT",
+    "url": "https://github.com/justinbehncodes/switchboard/releases/download/v0.0.0/switchboard.exe",
+    "hash": "REPLACED-BY-AUTOUPDATE",
+    "bin": "switchboard.exe",
+    "notes": [
+        "Two steps to go live:",
+        "  1. Run: switchboard install   (registers it as a browser, per-user)",
+        "  2. Pick Switchboard in the Settings page that opens (Set default)."
+    ],
+    "checkver": {
+        "github": "https://github.com/justinbehncodes/switchboard"
+    },
+    "autoupdate": {
+        "url": "https://github.com/justinbehncodes/switchboard/releases/download/v$version/switchboard.exe",
+        "hash": {
+            "url": "https://github.com/justinbehncodes/switchboard/releases/download/v$version/SHA256SUMS",
+            "regex": "$sha256\\s+switchboard.exe"
+        }
+    }
+}

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Open with…</title>
+<style>
+  :root {
+    --bg: #12141a; --panel: #1a1d26; --panel2: #21252f; --line: #2c3140;
+    --text: #e6e9f0; --dim: #8b93a7; --accent: #6ea8fe;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f5f8; --panel: #ffffff; --panel2: #eceef3; --line: #d9dde6;
+      --text: #1a1d26; --dim: #5b6474; --accent: #2563eb;
+      color-scheme: light;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.5 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    padding: 16px 18px;
+  }
+  .from { color: var(--dim); font-size: 12px; }
+  .url {
+    font-size: 13px; color: var(--accent); word-break: break-all; margin: 4px 0 14px;
+    max-height: 3em; overflow: hidden;
+  }
+  .opt {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;
+    font: inherit; text-align: left; cursor: pointer;
+  }
+  .opt:hover, .opt.sel { border-color: var(--accent); background: var(--panel2); }
+  .opt .key { font-weight: 600; }
+  .opt .meta { color: var(--dim); font-size: 12px; }
+  .opt kbd {
+    margin-left: auto; background: var(--panel2); border: 1px solid var(--line);
+    border-radius: 5px; padding: 0 7px; font-size: 12px; color: var(--dim);
+  }
+  label { display: flex; align-items: center; gap: 7px; color: var(--dim); font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+  <div class="from" id="from"></div>
+  <div class="url" id="url"></div>
+  <div id="opts"></div>
+  <label><input type="checkbox" id="remember"> Always use this profile for this site</label>
+
+<script>
+const esc = s => (s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let keys = [], sel = 0;
+
+async function init() {
+  const state = await (await fetch("/api/state")).json();
+  document.getElementById("from").textContent =
+    state.pickSource ? "Link from " + state.pickSource : "Link";
+  document.getElementById("url").textContent = state.pickUrl;
+  const profiles = state.config.profiles;
+  keys = Object.keys(profiles).sort();
+  document.getElementById("opts").innerHTML = keys.map((k, i) => {
+    const p = profiles[k];
+    const d = (state.discovered || []).find(x => x.browser === p.browser && x.dir === p.dir);
+    return `<button class="opt" id="opt${i}" onclick="pick(${i})">
+      <span class="key">${esc(k)}</span>
+      <span class="meta">${esc(d?.email || p.label || p.dir)} · ${esc(p.browser)}</span>
+      <kbd>${i + 1}</kbd>
+    </button>`;
+  }).join("");
+  highlight();
+}
+
+function highlight() {
+  keys.forEach((_, i) =>
+    document.getElementById("opt" + i).classList.toggle("sel", i === sel));
+}
+
+async function pick(i) {
+  await fetch("/api/launch", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ profile: keys[i], remember: document.getElementById("remember").checked }),
+  });
+  // window is closed by the app after launch
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key >= "1" && e.key <= String(keys.length)) pick(+e.key - 1);
+  else if (e.key === "ArrowDown") { sel = (sel + 1) % keys.length; highlight(); }
+  else if (e.key === "ArrowUp") { sel = (sel - 1 + keys.length) % keys.length; highlight(); }
+  else if (e.key === "Enter") pick(sel);
+  else if (e.key === "r") { const c = document.getElementById("remember"); c.checked = !c.checked; }
+});
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Switchboard Companion",
+  "version": "1.0",
+  "description": "Sends links that belong in another browser profile to Switchboard.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1vFw+KF1YtSW6DbetDeNPRrNzlkOsIXhVbokcVlO5AOzYDwm/QmVWfa//ngNmIZ8lj7BYNFKvNAVbZP3bqgkhoMCv/kp1+v4mSISEkae8PVadxcazBBNalE8EMr2oui0QUtv1gftVnL7Fe6Oaj77ziSRjDG2bd1/I375HyPKdb734pyVZKUzsz1NCah8TKwUvaTjuDMxAaxC6/AJsNOYhychwFhvuNiBd81BNn4i35JbVOcFUrvmCLCTMtnrbbOek6cwwrtsxOWlnqWfyQ++ue2WJ5+hBAOajymjCirfxSRNQv0TvSwOcRYb4F5nKx5S0EfNsxgED3av5sj1svuETQIDAQAB",
+  "background": { "service_worker": "sw.js" },
+  "permissions": ["nativeMessaging", "tabs", "webNavigation", "identity", "identity.email"],
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" }
+}

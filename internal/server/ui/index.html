@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Switchboard</title>
+<style>
+  :root {
+    --bg: #12141a; --panel: #1a1d26; --panel2: #21252f; --line: #2c3140;
+    --text: #e6e9f0; --dim: #8b93a7; --accent: #6ea8fe; --ok: #4ade80;
+    --warn: #fbbf24; --bad: #f87171; --accent-text: #0b1220;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f5f8; --panel: #ffffff; --panel2: #eceef3; --line: #d9dde6;
+      --text: #1a1d26; --dim: #5b6474; --accent: #2563eb; --ok: #15803d;
+      --warn: #b45309; --bad: #dc2626; --accent-text: #ffffff;
+      color-scheme: light;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.5 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    padding: 20px 24px 40px;
+  }
+  h1 { font-size: 18px; font-weight: 600; letter-spacing: .3px; }
+  h2 { font-size: 12px; font-weight: 600; color: var(--dim); text-transform: uppercase;
+       letter-spacing: 1px; margin: 26px 0 10px; }
+  header { display: flex; align-items: center; gap: 12px; }
+  .badge { font-size: 11px; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--line); color: var(--dim); }
+  .badge.on { color: var(--ok); border-color: var(--ok); }
+  .badge.off { color: var(--warn); border-color: var(--warn); }
+  .spacer { flex: 1; }
+  button {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  button.small { padding: 2px 8px; font-size: 12px; }
+  button.danger:hover { border-color: var(--bad); color: var(--bad); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card .key { font-weight: 600; }
+  .card .meta { color: var(--dim); font-size: 12px; margin-top: 2px; word-break: break-all; }
+  .card .chip { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 99px;
+    margin-top: 8px; background: var(--panel2); border: 1px solid var(--line); color: var(--dim); }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  th { color: var(--dim); font-weight: 500; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  input[type=text], select {
+    width: 100%; background: var(--panel2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 13px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  .row-btns { display: flex; gap: 4px; white-space: nowrap; }
+  .bar { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+  .note { color: var(--dim); font-size: 12px; }
+  #testResult { font-size: 13px; }
+  #testResult .hit { color: var(--ok); font-weight: 600; }
+  #testResult .miss { color: var(--warn); }
+  #toast { position: fixed; bottom: 18px; right: 18px; background: var(--panel2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; font-size: 13px;
+    opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  .logurl { color: var(--dim); max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Switchboard</h1>
+  <span id="badgeInstalled" class="badge">…</span>
+  <span id="badgeDefault" class="badge">…</span>
+  <span class="spacer"></span>
+  <button id="btnDefault" class="primary" style="display:none">Make default…</button>
+  <button id="btnAutostart">Start with Windows</button>
+  <button id="btnInstall">Register as browser</button>
+  <button id="btnUninstall" class="danger">Unregister</button>
+</header>
+<p class="note" style="margin-top:6px">
+  Config: <code id="configPath"></code> — first matching rule wins; unmatched links use the fallback.
+</p>
+
+<h2>Profiles</h2>
+<div id="profiles" class="cards"></div>
+
+<h2>Rules</h2>
+<table id="rulesTable">
+  <thead><tr><th style="width:26%">Source app (exe)</th><th>URL pattern (glob)</th><th style="width:18%">Profile</th><th style="width:110px"></th></tr></thead>
+  <tbody></tbody>
+</table>
+<div class="bar">
+  <button id="btnAddRule" class="small">+ Add rule</button>
+  <span class="spacer"></span>
+  <span class="note">Fallback:</span>
+  <select id="fallback" style="width:170px"></select>
+  <button id="btnSave" class="primary">Save</button>
+</div>
+
+<h2>Try it</h2>
+<div class="bar" style="margin-top:0">
+  <input type="text" id="testUrl" placeholder="https://app.example.com/…" style="flex:2">
+  <input type="text" id="testSource" placeholder="source exe (optional), e.g. slack.exe" style="flex:1">
+  <button id="btnTest">Test</button>
+</div>
+<p id="testResult" style="margin-top:8px"></p>
+
+<h2>Recent activity</h2>
+<table>
+  <thead><tr><th style="width:150px">When</th><th style="width:130px">From</th><th>URL</th><th style="width:110px">Profile</th><th style="width:200px">Via</th></tr></thead>
+  <tbody id="logBody"></tbody>
+</table>
+
+<div id="toast"></div>
+
+<script>
+let state = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => (s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+async function api(path, body) {
+  const res = await fetch(path, body === undefined ? {} : {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function profileKeys() { return Object.keys(state.config.profiles).sort(); }
+
+function profileSelect(value, extra) {
+  const opts = profileKeys().map(k =>
+    `<option value="${esc(k)}" ${k === value ? "selected" : ""}>${esc(k)}</option>`);
+  if (extra) opts.unshift(`<option value="ask" ${value === "ask" ? "selected" : ""}>ask (picker)</option>`);
+  return opts.join("");
+}
+
+function render() {
+  const c = state.config;
+  $("#configPath").textContent = state.configPath;
+  $("#badgeInstalled").textContent = state.installed ? "registered" : "not registered";
+  $("#badgeInstalled").className = "badge " + (state.installed ? "on" : "off");
+  $("#badgeDefault").textContent = state.isDefault ? "default browser" : "not default browser";
+  $("#badgeDefault").className = "badge " + (state.isDefault ? "on" : "off");
+  $("#btnDefault").style.display = state.isDefault ? "none" : "";
+  renderAutostart();
+
+  // profiles: configured ones + discovered-but-unconfigured ones
+  const configuredDirs = new Set(Object.values(c.profiles).map(p => p.browser + "|" + p.dir));
+  let html = "";
+  for (const key of profileKeys()) {
+    const p = c.profiles[key];
+    const d = state.discovered.find(x => x.browser === p.browser && x.dir === p.dir);
+    const missing = !d;
+    html += `<div class="card">
+      <div class="key">${esc(key)}</div>
+      <div class="meta">${esc(d?.email || d?.label || "")}</div>
+      <span class="chip">${esc(p.browser)} · ${esc(p.dir)}</span>
+      ${missing ? '<span class="chip" style="color:var(--bad)">profile not found</span>' : ""}
+    </div>`;
+  }
+  for (const d of state.discovered) {
+    if (configuredDirs.has(d.browser + "|" + d.dir)) continue;
+    html += `<div class="card" style="opacity:.75">
+      <div class="key">${esc(d.label)}</div>
+      <div class="meta">${esc(d.email)}</div>
+      <span class="chip">${esc(d.browser)} · ${esc(d.dir)}</span>
+      <div style="margin-top:8px"><button class="small" onclick="addProfile('${esc(d.browser)}','${esc(d.dir)}','${esc(d.label)}')">Add to config</button></div>
+    </div>`;
+  }
+  $("#profiles").innerHTML = html;
+
+  const tbody = $("#rulesTable tbody");
+  tbody.innerHTML = c.rules.map((r, i) => `<tr>
+    <td><input type="text" value="${esc(r.source)}" onchange="state.config.rules[${i}].source=this.value"></td>
+    <td><input type="text" value="${esc(r.url)}" onchange="state.config.rules[${i}].url=this.value"></td>
+    <td><select onchange="state.config.rules[${i}].profile=this.value">${profileSelect(r.profile)}</select></td>
+    <td><div class="row-btns">
+      <button class="small" onclick="moveRule(${i},-1)" ${i === 0 ? "disabled" : ""}>↑</button>
+      <button class="small" onclick="moveRule(${i},1)" ${i === c.rules.length - 1 ? "disabled" : ""}>↓</button>
+      <button class="small danger" onclick="delRule(${i})">✕</button>
+    </div></td>
+  </tr>`).join("");
+
+  $("#fallback").innerHTML = profileSelect(c.fallback.profile, true);
+
+  $("#logBody").innerHTML = (state.log || []).map(e => `<tr>
+    <td>${esc(e.time.replace("T", " ").slice(0, 19))}</td>
+    <td>${esc(e.source)}</td>
+    <td class="logurl" title="${esc(e.url)}">${esc(e.url)}</td>
+    <td>${esc(e.profile)}</td>
+    <td class="note">${esc(e.via)}</td>
+  </tr>`).join("") || `<tr><td colspan="5" class="note">No links routed yet.</td></tr>`;
+}
+
+function addProfile(browser, dir, label) {
+  let key = (label || dir).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "profile";
+  while (state.config.profiles[key]) key += "-2";
+  state.config.profiles[key] = { browser, dir, label };
+  render();
+  toast(`Added "${key}" — hit Save to keep it`);
+}
+function moveRule(i, d) {
+  const r = state.config.rules;
+  [r[i], r[i + d]] = [r[i + d], r[i]];
+  render();
+}
+function delRule(i) { state.config.rules.splice(i, 1); render(); }
+
+$("#btnAddRule").onclick = () => {
+  state.config.rules.push({ source: "", url: "", profile: profileKeys()[0] || "" });
+  render();
+};
+$("#btnSave").onclick = async () => {
+  state.config.fallback.profile = $("#fallback").value;
+  state.config.rules = state.config.rules.filter(r => r.source || r.url);
+  try { await api("/api/config", state.config); toast("Saved"); render(); }
+  catch (e) { toast("Save failed: " + e.message); }
+};
+$("#btnTest").onclick = async () => {
+  const r = await api("/api/test", { url: $("#testUrl").value, source: $("#testSource").value });
+  $("#testResult").innerHTML = r.profile
+    ? `→ <span class="hit">${esc(r.profile)}</span> <span class="note">(${esc(r.via)})</span>`
+    : `→ <span class="miss">picker would open</span> <span class="note">(${esc(r.via)})</span>`;
+};
+$("#btnInstall").onclick = async () => {
+  await api("/api/install", {});
+  toast("Registered");
+  refresh();
+};
+$("#btnDefault").onclick = async () => {
+  await api("/api/opensettings", {});
+  toast("In Settings: search Switchboard → Set default");
+};
+function renderAutostart() {
+  const b = $("#btnAutostart");
+  b.textContent = state.autostart ? "✓ Starts with Windows" : "Start with Windows (recommended)";
+  b.title = state.autostart
+    ? "Tray icon starts at login. Click to disable."
+    : "Puts the Switchboard icon in the tray at login for quick access to settings.";
+}
+$("#btnAutostart").onclick = async () => {
+  await api("/api/autostart", { enabled: !state.autostart });
+  state.autostart = !state.autostart;
+  renderAutostart();
+  toast(state.autostart ? "Will start with Windows — tray icon is up now" : "Autostart disabled");
+};
+$("#btnUninstall").onclick = async () => {
+  await api("/api/uninstall", {});
+  toast("Unregistered");
+  refresh();
+};
+
+async function refresh() { state = await api("/api/state"); render(); }
+refresh();
+setInterval(async () => {
+  // keep badges + activity live without stomping on in-progress edits
+  const fresh = await api("/api/state");
+  state.installed = fresh.installed; state.isDefault = fresh.isDefault; state.log = fresh.log;
+  const c = state.config;
+  $("#badgeInstalled").textContent = state.installed ? "registered" : "not registered";
+  $("#badgeInstalled").className = "badge " + (state.installed ? "on" : "off");
+  $("#badgeDefault").textContent = state.isDefault ? "default browser" : "not default browser";
+  $("#badgeDefault").className = "badge " + (state.isDefault ? "on" : "off");
+  $("#btnDefault").style.display = state.isDefault ? "none" : "";
+  $("#logBody").innerHTML = (state.log || []).map(e => `<tr>
+    <td>${esc(e.time.replace("T", " ").slice(0, 19))}</td>
+    <td>${esc(e.source)}</td>
+    <td class="logurl" title="${esc(e.url)}">${esc(e.url)}</td>
+    <td>${esc(e.profile)}</td>
+    <td class="note">${esc(e.via)}</td>
+  </tr>`).join("") || `<tr><td colspan="5" class="note">No links routed yet.</td></tr>`;
+}, 5000);
+</script>
+</body>
+</html>

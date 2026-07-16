@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>switchboard</id>
+    <!-- version is stamped by pack.ps1 from the release tag -->
+    <version>0.0.0</version>
+    <title>Switchboard</title>
+    <authors>Justin Behn</authors>
+    <projectUrl>https://github.com/justinbehncodes/switchboard</projectUrl>
+    <projectSourceUrl>https://github.com/justinbehncodes/switchboard</projectSourceUrl>
+    <packageSourceUrl>https://github.com/justinbehncodes/switchboard/tree/master/packaging/chocolatey</packageSourceUrl>
+    <licenseUrl>https://github.com/justinbehncodes/switchboard/blob/master/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <tags>browser default-browser link-router profiles portable edge chrome</tags>
+    <summary>Route every clicked link to the right browser profile.</summary>
+    <description><![CDATA[
+Switchboard registers as your default browser and routes every clicked link
+to the right browser **profile**, based on which app the link was clicked in
+(Slack, Teams, Discord, WhatsApp, Signal, Telegram, Outlook — any messenger
+or app) and where the URL points. Single portable exe, per-user, no admin,
+no telemetry.
+
+**After install, two steps:**
+
+1. Run `switchboard install` — registers it as a browser candidate (per-user
+   registry, fully reversible with `switchboard uninstall`).
+2. Pick Switchboard in **Settings > Default apps** (the command deep-links
+   you there).
+
+Rules live in `%LOCALAPPDATA%\Switchboard\config.toml`, e.g. links from
+Slack, Teams, or Discord open in your work profile, everything else in your
+home profile.
+    ]]></description>
+    <dependencies>
+      <!-- Settings UI + picker use the WebView2 runtime (preinstalled on
+           Win10/11 with Edge). Link routing itself has no dependencies. -->
+      <dependency id="webview2-runtime" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
