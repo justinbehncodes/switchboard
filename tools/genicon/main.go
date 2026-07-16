@@ -60,6 +60,17 @@ func main() {
 		panic(err)
 	}
 
+	// Standalone PNG for package-manager icon URLs (Chocolatey etc.).
+	{
+		var buf bytes.Buffer
+		if err := png.Encode(&buf, render(256)); err != nil {
+			panic(err)
+		}
+		if err := os.WriteFile("assets/icon.png", buf.Bytes(), 0o644); err != nil {
+			panic(err)
+		}
+	}
+
 	// PNG icons for the companion extension.
 	for _, s := range []int{16, 48, 128} {
 		var buf bytes.Buffer
